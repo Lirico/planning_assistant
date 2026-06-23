@@ -2,8 +2,6 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-// IMPORTAMOS MONGOOSE Y EL MODELO
 import dbConnect from "@/lib/db";
 import Lesson from "@/models/Lesson";
 
@@ -19,11 +17,26 @@ const lessonPlanSchema = z.object({
       description: z.string(),
       teacherRole: z.string(),
       studentRole: z.string(),
-    })
+    }),
   ),
   practicalExercises: z.array(z.string()),
   evaluationCriteria: z.string(),
 });
+
+export async function GET() {
+  try {
+    await dbConnect();
+    // Traemos todas las clases de la base de datos ordenadas de la más nueva a la más vieja
+    const lessons = await Lesson.find({}).sort({ createdAt: -1 });
+    return NextResponse.json(lessons);
+  } catch (error) {
+    console.error("Error al obtener historial:", error);
+    return NextResponse.json(
+      { error: "No se pudo obtener el historial de clases" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +44,10 @@ export async function POST(req: Request) {
     const { topic, educationalLevel, durationMinutes, additionalNotes } = body;
 
     if (!topic) {
-      return NextResponse.json({ error: "El tema es obligatorio" }, { status: 400 });
+      return NextResponse.json(
+        { error: "El tema es obligatorio" },
+        { status: 400 },
+      );
     }
 
     const systemPrompt = `
@@ -50,7 +66,7 @@ export async function POST(req: Request) {
 
     // 1. Llamamos a Gemini
     const { object } = await generateObject({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash"), // <--- Actualizado a la versión vigente
       schema: lessonPlanSchema,
       prompt: userPrompt,
       system: systemPrompt,
@@ -73,12 +89,11 @@ export async function POST(req: Request) {
 
     // 4. DEVOLVEMOS EL OBJETO YA GUARDADO (que incluye el _id de MongoDB)
     return NextResponse.json(savedLesson);
-
   } catch (error) {
     console.error("Error en el flujo:", error);
     return NextResponse.json(
       { error: "Hubo un error al procesar o guardar el plan de clase" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
