@@ -19,6 +19,7 @@ export interface ILessonSchema extends Document {
 }
 
 const LessonSchema: Schema = new Schema({
+  userId: { type: String, required: true }, // <--- AGREGAR ESTO
   topic: { type: String, required: true },
   educationalLevel: { type: String, required: true },
   durationTotal: { type: Number, required: true },

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import dbConnect from "@/lib/db";
 import Lesson from "@/models/Lesson";
+import { auth } from "@clerk/nextjs/server";
 
 const lessonPlanSchema = z.object({
   topic: z.string(),
@@ -25,14 +26,19 @@ const lessonPlanSchema = z.object({
 
 export async function GET() {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
     await dbConnect();
     // Traemos todas las clases de la base de datos ordenadas de la más nueva a la más vieja
-    const lessons = await Lesson.find({}).sort({ createdAt: -1 });
+    const lessons = await Lesson.find({ userId }).sort({ createdAt: -1 });
     return NextResponse.json(lessons);
   } catch (error) {
     console.error("Error al obtener historial:", error);
     return NextResponse.json(
-      { error: "No se pudo obtener el historial de clases" },
+      { error: "Error en el servidor" },
       { status: 500 },
     );
   }
@@ -42,6 +48,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { topic, educationalLevel, durationMinutes, additionalNotes } = body;
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
 
     if (!topic) {
       return NextResponse.json(
@@ -78,6 +89,7 @@ export async function POST(req: Request) {
     // 3. GUARDAMOS EL REGISTRO EN MONGO ATLAS
     // Pasamos el objeto que nos devolvió la IA. Mongoose se encarga de mapearlo con el Schema.
     const savedLesson = await Lesson.create({
+      userId,
       topic: object.topic,
       educationalLevel: object.educationalLevel,
       durationTotal: object.durationTotal,

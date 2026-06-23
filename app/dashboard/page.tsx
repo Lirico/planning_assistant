@@ -5,6 +5,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import LessonForm from "@/components/LessonForm";
 import { LessonRequestInput } from "@/types/lesson";
+import Navbar from "@/components/Navbar";
 
 // Importamos el visor de forma dinámica desactivando el Server-Side Rendering (SSR) solo para este componente
 const LessonView = dynamic(() => import("@/components/LessonView"), {
@@ -34,16 +35,19 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50/50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <LessonForm onSubmit={handleGenerateLesson} isLoading={isLoading} />
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-gray-50/50 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <LessonForm onSubmit={handleGenerateLesson} isLoading={isLoading} />
+          </div>
+          <div className="lg:col-span-2">
+            {/* Al desactivar el SSR acá, Next.js no va a intentar adivinar los datos vacíos en el servidor */}
+            <LessonView data={lessonData} />
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          {/* Al desactivar el SSR acá, Next.js no va a intentar adivinar los datos vacíos en el servidor */}
-          <LessonView data={lessonData} />
-        </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
